@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trip Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #14213D;
+    --navy-deep: #0D1729;
+    --parchment: #FAF6EC;
+    --parchment-dim: #F0EADA;
+    --brass: #C89B3C;
+    --brass-text: #E8C878;
+    --teal: #3B6E71;
+    --rust: #A8402F;
+    --ink: #24211A;
+    --ink-soft: #55503F;
+    --line: #D8CFB5;
+    --focus-ring: #1F6FEB;
+    --radius: 3px;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light; }
+  body { margin: 0; background: var(--navy); font-family: var(--sans); color: var(--ink); line-height: 1.5; }
+
+  .skip-link {
+    position: absolute; left: -9999px; top: 0;
+    background: var(--brass); color: var(--navy-deep);
+    font-family: var(--mono); font-weight: 700;
+    padding: 12px 20px; z-index: 100; border-radius: 0 0 var(--radius) 0;
+  }
+  .skip-link:focus { left: 0; }
+
+  a:focus-visible, button:focus-visible, input:focus-visible,
+  select:focus-visible, [role="tab"]:focus-visible, label:has(input:focus-visible) {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 20px 64px; }
+
+  /* -------- Site header -------- */
+  .site-header {
+    padding: 22px 4px 14px;
+    color: var(--parchment);
+  }
+  .site-header__eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--brass-text); margin: 0 0 4px;
+  }
+  .site-header h1 { font-family: var(--mono); font-size: clamp(22px, 4vw, 30px); margin: 0; }
+
+  /* -------- Mode switcher -------- */
+  .mode-switch {
+    border: none; margin: 0 4px 14px; padding: 0; display: flex; gap: 8px;
+  }
+  .mode-switch label {
+    display: flex; align-items: center; gap: 7px;
+    border: 1px solid #3A4666; border-radius: 20px;
+    padding: 7px 14px; font-size: 13px; cursor: pointer;
+    color: #C9CFDE; background: transparent; font-family: var(--mono);
+  }
+  .mode-switch input[type="radio"] { accent-color: var(--brass); margin: 0; }
+  .mode-switch label:has(input:checked) {
+    border-color: var(--brass); background: rgba(200,155,60,0.12); color: var(--brass-text);
+  }
+
+  /* -------- Chat panel -------- */
+  .chat-shell {
+    background: var(--parchment); border-radius: 6px 6px 0 0; padding: 20px 24px 18px;
+  }
+  #chat-log {
+    display: flex; flex-direction: column; gap: 10px;
+    max-height: 380px; overflow-y: auto; padding: 4px 2px 10px;
+    margin-bottom: 12px;
+  }
+  .chat-msg { display: flex; }
+  .chat-msg--agent { justify-content: flex-start; }
+  .chat-msg--user { justify-content: flex-end; }
+  .chat-msg__bubble {
+    max-width: 80%; padding: 10px 14px; border-radius: 10px; font-size: 14.5px; line-height: 1.5;
+  }
+  .chat-msg--agent .chat-msg__bubble {
+    background: var(--navy-deep); color: var(--parchment); border-bottom-left-radius: 2px;
+  }
+  .chat-msg--user .chat-msg__bubble {
+    background: #fff; border: 1px solid var(--line); color: var(--ink); border-bottom-right-radius: 2px;
+  }
+  .chat-msg__speaker { display: block; }
+  #chat-form { display: flex; gap: 8px; }
+  #chat-form input[type="text"] {
+    flex: 1; font-family: var(--sans); font-size: 15px; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink);
+  }
+  .chat-hint { font-size: 12px; color: var(--ink-soft); margin: 12px 0 14px; }
+
+  /* -------- Trip setup form -------- */
+  .setup {
+    background: var(--parchment);
+    border-radius: 6px 6px 0 0;
+    padding: 22px 24px 20px;
+  }
+  .setup h2 {
+    font-family: var(--mono); font-size: 13px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-soft); margin: 0 0 16px;
+  }
+  .field-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px 16px;
+  }
+  .field label {
+    display: block; font-size: 12px; font-weight: 600; color: var(--ink-soft);
+    margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .field input, .field select {
+    width: 100%; font-family: var(--sans); font-size: 15px;
+    padding: 9px 10px; border: 1px solid var(--line); border-radius: var(--radius);
+    background: #fff; color: var(--ink);
+  }
+  .field input::placeholder { color: #A39D86; }
+  datalist { display: none; }
+
+  fieldset { border: none; margin: 16px 0 0; padding: 0; }
+  fieldset legend {
+    font-size: 12px; font-weight: 600; color: var(--ink-soft);
+    text-transform: uppercase; letter-spacing: .04em; padding: 0; margin-bottom: 8px;
+  }
+  .vibe-options { display: flex; gap: 10px; flex-wrap: wrap; }
+  .vibe-options label {
+    display: flex; align-items: center; gap: 7px;
+    border: 1px solid var(--line); border-radius: 20px;
+    padding: 7px 14px; font-size: 14px; cursor: pointer; background: #fff;
+    text-transform: none; letter-spacing: normal; font-weight: 500; margin: 0;
+  }
+  .vibe-options input[type="radio"] { margin: 0; accent-color: var(--teal); }
+  .vibe-options label:has(input:checked) {
+    border-color: var(--teal); background: rgba(59,110,113,0.08); color: var(--teal); font-weight: 600;
+  }
+
+  .setup__actions { margin-top: 18px; display: flex; align-items: center; gap: 14px; }
+  button.primary {
+    font-family: var(--mono); font-weight: 700; font-size: 13px; letter-spacing: .04em;
+    text-transform: uppercase; background: var(--navy); color: var(--parchment);
+    border: none; border-radius: var(--radius); padding: 12px 22px; cursor: pointer;
+  }
+  button.primary:hover { background: var(--navy-deep); }
+  .setup__hint { font-size: 12px; color: var(--ink-soft); }
+
+  /* -------- Guardrail / error message -------- */
+  .guardrail-msg {
+    background: #F3E3DD; border-left: 4px solid var(--rust); color: #6E2A1C;
+    padding: 16px 20px; font-size: 14.5px; margin: 0; line-height: 1.6;
+  }
+  .guardrail-msg strong { font-family: var(--mono); display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+
+  /* -------- Results wrap -------- */
+  #results { display: none; }
+  #results.visible { display: block; }
+
+  .pass {
+    background: var(--navy-deep); color: var(--parchment); padding: 24px 28px 20px;
+  }
+  .pass__title { font-family: var(--mono); font-weight: 700; font-size: clamp(24px, 4.5vw, 36px); margin: 0 0 4px; }
+  .pass__sub { font-size: 14px; color: #C9CFDE; margin: 0; }
+  .tier-badge {
+    display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; background: var(--brass);
+    color: var(--navy-deep); padding: 3px 9px; border-radius: var(--radius); margin-top: 10px;
+  }
+
+  .warning {
+    background: #F3E3DD; border-left: 4px solid var(--rust); color: #6E2A1C;
+    padding: 14px 18px; font-size: 14px; margin: 0;
+  }
+  .warning strong { font-family: var(--mono); }
+
+  /* -------- Radio-card picker (flights/hotels) -------- */
+  .picker {
+    background: var(--parchment); padding: 20px 24px;
+    border-bottom: 1px solid var(--line);
+  }
+  .picker h2 {
+    font-family: var(--mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-soft); margin: 0 0 12px;
+  }
+  .option-cards { display: grid; gap: 8px; margin: 0 0 20px; }
+  .option-cards:last-child { margin-bottom: 0; }
+  .option-card {
+    display: flex; align-items: center; gap: 12px;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 12px 14px; cursor: pointer; background: #fff;
+  }
+  .option-card:has(input:checked) {
+    border-color: var(--brass); background: #FFF9EC; box-shadow: 0 0 0 1px var(--brass) inset;
+  }
+  .option-card input[type="radio"] { accent-color: var(--brass); width: 17px; height: 17px; flex-shrink: 0; }
+  .option-card__body { flex: 1; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .option-card__name { font-weight: 600; font-size: 14.5px; }
+  .option-card__meta { font-size: 12.5px; color: var(--ink-soft); display: block; margin-top: 2px; }
+  .option-card__price { font-family: var(--mono); font-size: 14px; color: var(--teal); font-weight: 500; white-space: nowrap; }
+
+  /* -------- Cost summary strip -------- */
+  .cost-strip {
+    background: var(--parchment-dim); border-bottom: 1px solid var(--line);
+    padding: 14px 24px; display: flex; flex-wrap: wrap; gap: 20px;
+    font-size: 13px; font-family: var(--mono);
+  }
+  .cost-strip__item span:first-child { color: var(--ink-soft); margin-right: 6px; }
+  .cost-strip__total { margin-left: auto; font-weight: 700; color: var(--navy); }
+
+  /* -------- Day tabs -------- */
+  .tablist-region { background: var(--parchment); }
+  [role="tablist"] { display: flex; overflow-x: auto; gap: 2px; padding: 16px 20px 0; scrollbar-width: thin; }
+  [role="tab"] {
+    flex: 0 0 auto; font-family: var(--mono); font-size: 13px; font-weight: 500;
+    color: var(--ink-soft); background: var(--parchment-dim); border: 1px solid var(--line);
+    border-bottom: none; border-radius: 6px 6px 0 0; padding: 10px 16px 12px;
+    cursor: pointer; position: relative; text-align: left; min-width: 84px;
+  }
+  [role="tab"]::before {
+    content: ""; position: absolute; top: -1px; right: 6px; width: 6px; height: 6px;
+    border-radius: 50%; background: var(--navy);
+  }
+  [role="tab"] .tab__day { display: block; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+  [role="tab"] .tab__count { display: block; font-size: 15px; font-weight: 700; color: var(--ink); margin-top: 2px; }
+  [role="tab"][aria-selected="true"] {
+    background: var(--parchment); border-color: var(--brass); color: var(--navy);
+    transform: translateY(-4px); box-shadow: 0 -2px 0 var(--brass) inset;
+  }
+  [role="tab"][aria-selected="true"] .tab__count { color: var(--navy); }
+  [role="tab"]:hover { color: var(--navy); }
+  @media (prefers-reduced-motion: no-preference) {
+    [role="tab"] { transition: transform 120ms ease, background 120ms ease; }
+  }
+
+  [role="tabpanel"] { background: var(--parchment); padding: 20px 24px 32px; }
+  [role="tabpanel"]:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: -3px; }
+  .panel__note {
+    font-size: 13px; color: var(--ink-soft); font-style: italic; margin: 0 0 16px;
+    padding: 8px 12px; background: rgba(59,110,113,0.08); border-left: 3px solid var(--teal);
+  }
+  .panel__heading {
+    font-family: var(--mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-soft); margin: 0 0 10px;
+  }
+  .activity-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .activity-card {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    background: #FFFFFF; border: 1px solid var(--line); border-radius: var(--radius); padding: 13px 16px;
+  }
+  .activity-card__name { font-size: 15px; font-weight: 500; color: var(--ink); }
+  .activity-card__price { font-family: var(--mono); font-size: 13px; color: var(--teal); white-space: nowrap; }
+
+  .change-trip {
+    background: var(--parchment); padding: 14px 24px 22px; border-top: 1px dashed var(--line);
+  }
+  button.secondary {
+    font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    background: none; color: var(--teal); border: 1px solid var(--teal); border-radius: var(--radius);
+    padding: 9px 16px; cursor: pointer;
+  }
+  button.secondary:hover { background: rgba(59,110,113,0.08); }
+
+  footer.credits { text-align: center; color: #8993B5; font-size: 12px; font-family: var(--mono); padding: 18px 20px 0; }
+
+  @media (max-width: 480px) {
+    .setup, .picker, .change-trip { padding-left: 18px; padding-right: 18px; }
+    .cost-strip, [role="tablist"] { padding-left: 18px; padding-right: 18px; }
+    [role="tabpanel"] { padding: 18px 16px 28px; }
+    .pass { padding: 20px 18px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#trip-form">Skip to trip planner form</a>
+
+<div class="wrap">
+
+  <header class="site-header">
+    <p class="site-header__eyebrow">Trip Planner Agent</p>
+    <h1>Plan a trip</h1>
+  </header>
+
+  <fieldset class="mode-switch">
+    <legend class="visually-hidden" style="position:absolute;left:-9999px;">How would you like to plan?</legend>
+    <label><input type="radio" name="mode" value="form" checked> Quick form</label>
+    <label><input type="radio" name="mode" value="chat"> Chat with the agent</label>
+  </fieldset>
+
+  <div id="form-panel">
+  <form class="setup" id="trip-form">
+    <h2>Trip details</h2>
+    <div class="field-grid">
+      <div class="field">
+        <label for="destination">Destination</label>
+        <input type="text" id="destination" name="destination" list="destination-list"
+               placeholder="e.g. Kyoto" autocomplete="off" required
+               aria-describedby="destination-hint">
+        <datalist id="destination-list"></datalist>
+      </div>
+      <div class="field">
+        <label for="duration">Trip length (days)</label>
+        <input type="number" id="duration" name="duration" min="1" max="30" value="5" required>
+      </div>
+      <div class="field">
+        <label for="travelers">Travelers</label>
+        <input type="number" id="travelers" name="travelers" min="1" max="12" value="2" required>
+      </div>
+      <div class="field">
+        <label for="budget">Total budget (USD)</label>
+        <input type="number" id="budget" name="budget" min="1" step="50" value="3000" required>
+      </div>
+    </div>
+
+    <fieldset>
+      <legend>Vibe</legend>
+      <div class="vibe-options">
+        <label><input type="radio" name="vibe" value="relaxing" checked> Relaxing</label>
+        <label><input type="radio" name="vibe" value="adventurous"> Adventurous</label>
+        <label><input type="radio" name="vibe" value="cultural"> Cultural</label>
+      </div>
+    </fieldset>
+
+    <div class="setup__actions">
+      <button type="submit" class="primary">Plan trip</button>
+      <span class="setup__hint" id="destination-hint">Try a real place, or test the guardrail with "the moon" or "narnia".</span>
+    </div>
+  </form>
+  </div>
+
+  <div id="chat-panel" hidden>
+    <div class="chat-shell">
+      <h2 class="visually-hidden" style="position:absolute;left:-9999px;">Chat with the trip planner agent</h2>
+      <div id="chat-log" role="log" aria-live="polite" aria-label="Trip planning conversation"></div>
+      <form id="chat-form">
+        <label for="chat-input" class="visually-hidden" style="position:absolute;left:-9999px;">Your message</label>
+        <input type="text" id="chat-input" autocomplete="off"
+               placeholder="e.g. Kyoto for 8 days, cultural vibe, $6000 for two of us">
+        <button type="submit" class="primary">Send</button>
+      </form>
+      <p class="chat-hint">Give as much or as little detail as you like — the agent will ask for whatever's missing. This demo understands simple phrasing like "solo trip", "family of 4", "$3000 budget", "10 days", and named destinations.</p>
+      <button type="button" class="secondary" id="chat-restart-btn">Start over</button>
+    </div>
+  </div>
+
+  <div id="guardrail-region" role="region" aria-live="assertive" aria-label="Trip planner message" tabindex="-1"></div>
+
+  <div id="results">
+    <header class="pass" id="trip-header">
+      <h2 class="pass__title" id="dest-title"></h2>
+      <p class="pass__sub" id="dest-sub"></p>
+      <span class="tier-badge" id="tier-badge"></span>
+    </header>
+
+    <div id="warning-region" role="region" aria-live="polite" aria-label="Budget notice"></div>
+
+    <div class="picker">
+      <h2>Choose your flight</h2>
+      <fieldset>
+        <legend class="visually-hidden" style="position:absolute;left:-9999px;">Flight options</legend>
+        <div class="option-cards" id="flight-options"></div>
+      </fieldset>
+      <h2>Choose your stay</h2>
+      <fieldset>
+        <legend class="visually-hidden" style="position:absolute;left:-9999px;">Hotel options</legend>
+        <div class="option-cards" id="hotel-options"></div>
+      </fieldset>
+    </div>
+
+    <div class="cost-strip" aria-label="Cost breakdown">
+      <div class="cost-strip__item"><span>Flights</span><strong id="cost-flight"></strong></div>
+      <div class="cost-strip__item"><span>Hotel</span><strong id="cost-hotel"></strong></div>
+      <div class="cost-strip__item"><span>Activities</span><strong id="cost-activities"></strong></div>
+      <div class="cost-strip__total"><span>Estimated total</span> <strong id="cost-total"></strong></div>
+    </div>
+
+    <div class="tablist-region">
+      <div role="tablist" aria-label="Itinerary days" id="day-tablist"></div>
+      <div id="day-panels"></div>
+    </div>
+
+    <div class="change-trip">
+      <button type="button" class="secondary" id="change-trip-btn">Plan a different trip</button>
+    </div>
+  </div>
+
+  <footer class="credits">Trip Planner Agent — mock inventory, illustrative pricing only.</footer>
+</div>
+
+<script>
+/* =======================================================================
+   Mock trip-planning "agent", ported from agent.py so this page can run
+   entirely client-side with no server. Same guardrails, same budget-tier
+   and pacing rules, same contradictory-suggestion prevention (hotel tier,
+   flight class, and activity price bands are always drawn from the same
+   tier as each other).
+   ======================================================================= */
+
+const KNOWN_DESTINATIONS = {
+  "bali":       { country: "Indonesia", tags: ["beach", "nature", "spiritual"] },
+  "tokyo":      { country: "Japan", tags: ["urban", "culture", "food"] },
+  "kyoto":      { country: "Japan", tags: ["culture", "history", "temples"] },
+  "paris":      { country: "France", tags: ["culture", "romance", "food"] },
+  "rome":       { country: "Italy", tags: ["history", "culture", "food"] },
+  "lisbon":     { country: "Portugal", tags: ["coastal", "culture", "nightlife"] },
+  "reykjavik":  { country: "Iceland", tags: ["nature", "adventure", "landscape"] },
+  "queenstown": { country: "New Zealand", tags: ["adventure", "nature", "extreme sports"] },
+  "cape town":  { country: "South Africa", tags: ["nature", "adventure", "coastal"] },
+  "marrakech":  { country: "Morocco", tags: ["culture", "markets", "history"] },
+  "bangkok":    { country: "Thailand", tags: ["food", "urban", "culture"] },
+  "goa":        { country: "India", tags: ["beach", "relaxing", "nightlife"] },
+  "manali":     { country: "India", tags: ["adventure", "nature", "mountains"] },
+  "rishikesh":  { country: "India", tags: ["spiritual", "adventure", "nature"] },
+  "cancun":     { country: "Mexico", tags: ["beach", "relaxing", "family"] },
+  "banff":      { country: "Canada", tags: ["nature", "adventure", "mountains"] },
+  "santorini":  { country: "Greece", tags: ["beach", "romance", "relaxing"] },
+};
+
+const UNSERVICEABLE = {
+  "moon": "off-planet", "mars": "off-planet", "the moon": "off-planet", "outer space": "off-planet",
+  "narnia": "fictional", "atlantis": "fictional", "hogwarts": "fictional", "middle earth": "fictional",
+  "westeros": "fictional", "gotham": "fictional", "wakanda": "fictional",
+  "north korea": "restricted", "north sentinel island": "restricted",
+};
+
+const BUDGET_TIERS = { budget: [0, 60], mid: [60, 180], luxury: [180, Infinity] };
+
+const VIBE_PACING = {
+  relaxing:    { perDay: 2, favored: ["beach", "relaxing", "spa", "nature"] },
+  adventurous: { perDay: 4, favored: ["adventure", "extreme sports", "nature", "mountains"] },
+  cultural:    { perDay: 3, favored: ["culture", "history", "temples", "markets", "food"] },
+};
+
+const ACTIVITY_LIBRARY = {
+  beach: ["Sunset beach walk", "Snorkeling trip", "Beach clean & swim", "Catamaran sail"],
+  relaxing: ["Spa & massage session", "Rooftop lounge afternoon", "Slow breakfast + free morning", "Sunset viewpoint"],
+  spa: ["Traditional spa ritual", "Hot spring soak"],
+  nature: ["Guided nature walk", "Botanical garden visit", "Waterfall hike (easy)", "Sunrise viewpoint hike"],
+  adventure: ["White-water rafting", "Paragliding session", "Zipline canopy tour", "Rock climbing intro"],
+  "extreme sports": ["Bungee jump", "Skydiving (tandem)", "Canyon swing"],
+  mountains: ["Day hike to base camp", "Cable car + summit viewpoint", "Mountain biking trail"],
+  culture: ["Old town walking tour", "Local artisan workshop", "Traditional dance show"],
+  history: ["Guided historic-site tour", "Museum of national history", "Ancient ruins visit"],
+  temples: ["Sunrise temple visit", "Temple complex walking tour"],
+  markets: ["Night market food crawl", "Local souk / bazaar tour"],
+  food: ["Street food tasting tour", "Cooking class", "Local market + lunch tasting"],
+  romance: ["Sunset river cruise", "Candlelit dinner reservation"],
+  urban: ["City skyline observation deck", "Neighborhood cafe hop"],
+  nightlife: ["Rooftop bar evening", "Live music venue night"],
+  family: ["Interactive science museum", "Wildlife park visit"],
+  spiritual: ["Meditation session with local guide", "Sunrise riverside ceremony visit"],
+};
+
+const HOTEL_NAMES_BY_TIER = {
+  budget: ["{dest} Backpackers Hostel", "Traveler's Nest {dest}", "{dest} Budget Inn"],
+  mid: ["{dest} Garden Hotel", "The {dest} Collective", "Hotel {dest} Central"],
+  luxury: ["{dest} Grand Resort & Spa", "The Ritz Terrace {dest}", "{dest} Palace Hotel"],
+};
+
+const FLIGHT_CARRIERS = ["IndiGo Air", "SkyBridge", "Meridian Airlines", "Coastal Wings", "Northbound"];
+
+// ---- seeded RNG (mulberry32-ish), so re-planning the same trip is stable ----
+function seedFromString(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return () => {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return ((h ^= h >>> 16) >>> 0) / 4294967296;
+  };
+}
+function makeRng(seedStr) {
+  const seedFn = seedFromString(seedStr);
+  let state = (seedFn() * 4294967296) >>> 0;
+  return {
+    next() {
+      state |= 0; state = (state + 0x6D2B79F5) | 0;
+      let t = Math.imul(state ^ (state >>> 15), 1 | state);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    },
+    uniform(min, max) { return min + this.next() * (max - min); },
+    choice(arr) { return arr[Math.floor(this.next() * arr.length)]; },
+    shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(this.next() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    },
+  };
+}
+
+function classifyBudgetTier(budgetTotal, days, travelers) {
+  const perPersonPerDay = budgetTotal / Math.max(days, 1) / Math.max(travelers, 1);
+  for (const [tier, [lo, hi]] of Object.entries(BUDGET_TIERS)) {
+    if (perPersonPerDay >= lo && perPersonPerDay < hi) return tier;
+  }
+  return "luxury";
+}
+
+function checkGuardrail(destinationRaw) {
+  const dest = destinationRaw.trim().toLowerCase();
+  if (KNOWN_DESTINATIONS[dest]) return null;
+  if (UNSERVICEABLE[dest]) {
+    const reason = UNSERVICEABLE[dest];
+    const title = destinationRaw.trim().replace(/\b\w/g, c => c.toUpperCase());
+    if (reason === "off-planet") {
+      return `I can't book travel to ${title} — there's no commercial travel inventory for off-Earth destinations. If you meant a space-themed trip on Earth (a space center visit, an observatory trip, or aurora-viewing tours), try one of those instead.`;
+    }
+    if (reason === "fictional") {
+      return `${title} isn't a real place I can find flights or hotels for. If you're after that kind of atmosphere, tell me what drew you to it (scenery, history, adventure) and try a real destination that matches.`;
+    }
+    if (reason === "restricted") {
+      return `I'm not able to plan travel to ${title} — it's not currently serviceable through standard travel booking channels. Try a different destination.`;
+    }
+  }
+  const known = Object.keys(KNOWN_DESTINATIONS).sort().map(d => d.replace(/\b\w/g, c => c.toUpperCase())).join(", ");
+  return `I don't have search inventory for "${destinationRaw}" in this demo. I can currently plan trips to: ${known}. Pick one of these, or a nearby alternative.`;
+}
+
+function searchFlights(destination, tier, travelers) {
+  const rng = makeRng(`flights-${destination}-${tier}`);
+  const base = { budget: 220, mid: 480, luxury: 950 }[tier];
+  const opts = [];
+  for (let i = 0; i < 3; i++) {
+    const price = Math.round(base * rng.uniform(0.85, 1.25));
+    opts.push({
+      carrier: rng.choice(FLIGHT_CARRIERS),
+      pricePerPerson: price,
+      total: price * travelers,
+      flightClass: tier !== "luxury" ? "Economy" : rng.choice(["Premium Economy", "Business"]),
+      stops: tier === "luxury" ? 0 : rng.choice([0, 1]),
+    });
+  }
+  return opts.sort((a, b) => a.total - b.total);
+}
+
+function searchHotels(destination, tier, nights) {
+  const rng = makeRng(`hotels-${destination}-${tier}`);
+  const base = { budget: 18, mid: 90, luxury: 320 }[tier];
+  const names = HOTEL_NAMES_BY_TIER[tier];
+  const ratingRange = { budget: [3.4, 4.2], mid: [4.0, 4.6], luxury: [4.5, 5.0] }[tier];
+  const opts = names.map(tpl => {
+    const nightly = Math.round(base * rng.uniform(0.85, 1.2));
+    return {
+      name: tpl.replace("{dest}", titleCase(destination)),
+      tier,
+      nightly,
+      total: nightly * nights,
+      rating: Math.round(rng.uniform(...ratingRange) * 10) / 10,
+    };
+  });
+  return opts.sort((a, b) => a.nightly - b.nightly);
+}
+
+function searchActivities(destination, vibe, tier) {
+  const info = KNOWN_DESTINATIONS[destination];
+  const pacing = VIBE_PACING[vibe];
+  const rng = makeRng(`activities-${destination}-${vibe}-${tier}`);
+  const priceBand = { budget: [0, 25], mid: [15, 70], luxury: [50, 250] }[tier];
+
+  const candidateTags = pacing.favored.filter(t => info.tags.includes(t));
+  const tagsToUse = candidateTags.length ? candidateTags : info.tags;
+
+  let pool = [];
+  tagsToUse.forEach(tag => pool.push(...(ACTIVITY_LIBRARY[tag] || [])));
+  info.tags.forEach(tag => pool.push(...(ACTIVITY_LIBRARY[tag] || [])));
+  pool = [...new Set(pool)];
+
+  const results = pool.map(name => ({ name, price: Math.round(rng.uniform(...priceBand)) }));
+  return rng.shuffle(results);
+}
+
+function titleCase(s) { return s.replace(/\b\w/g, c => c.toUpperCase()); }
+function money(n) { return "$" + Math.round(n).toLocaleString("en-US"); }
+
+/* -----------------------------------------------------------------------
+   Build the day-by-day plan (independent of which flight/hotel is chosen —
+   those only affect the cost totals, not the activity schedule).
+   ----------------------------------------------------------------------- */
+function buildDays(destination, vibe, tier, durationDays) {
+  const activities = searchActivities(destination, vibe, tier);
+  const perDay = VIBE_PACING[vibe].perDay;
+  const days = [];
+  let cursor = 0;
+  for (let dayNum = 1; dayNum <= durationDays; dayNum++) {
+    let note = null;
+    let slots = perDay;
+    if (dayNum === 1) { note = "Arrival day -- lighter schedule to allow for travel/check-in."; slots = Math.max(1, perDay - 1); }
+    else if (dayNum === durationDays && durationDays > 1) { note = "Departure day -- lighter schedule to allow time for checkout/travel."; slots = Math.max(1, perDay - 1); }
+    const dayActivities = [];
+    for (let i = 0; i < slots; i++) {
+      if (!activities.length) break;
+      if (cursor >= activities.length) cursor = 0;
+      dayActivities.push(activities[cursor]);
+      cursor++;
+    }
+    days.push({ day: dayNum, note, activities: dayActivities });
+  }
+  return days;
+}
+
+/* =======================================================================
+   App state + rendering
+   ======================================================================= */
+let state = null;
+
+function populateDestinationList() {
+  const list = document.getElementById("destination-list");
+  list.innerHTML = Object.keys(KNOWN_DESTINATIONS).sort()
+    .map(d => `<option value="${titleCase(d)}">`).join("");
+}
+
+function showGuardrail(message) {
+  const region = document.getElementById("guardrail-region");
+  region.innerHTML = `<p class="guardrail-msg"><strong>Can't plan that trip</strong>${message}</p>`;
+  document.getElementById("results").classList.remove("visible");
+  region.focus();
+}
+
+function clearGuardrail() {
+  document.getElementById("guardrail-region").innerHTML = "";
+}
+
+document.getElementById("trip-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const destinationRaw = document.getElementById("destination").value;
+  const durationDays = parseInt(document.getElementById("duration").value, 10);
+  const travelers = parseInt(document.getElementById("travelers").value, 10);
+  const budgetTotal = parseFloat(document.getElementById("budget").value);
+  const vibe = document.querySelector('input[name="vibe"]:checked').value;
+
+  const guardrailMsg = checkGuardrail(destinationRaw);
+  if (guardrailMsg) {
+    showGuardrail(guardrailMsg);
+    return;
+  }
+  clearGuardrail();
+
+  const destination = destinationRaw.trim().toLowerCase();
+  const tier = classifyBudgetTier(budgetTotal, durationDays, travelers);
+  const nights = durationDays > 1 ? durationDays - 1 : 1;
+
+  const flights = searchFlights(destination, tier, travelers);
+  const hotels = searchHotels(destination, tier, nights);
+  const days = buildDays(destination, vibe, tier, durationDays);
+
+  state = {
+    destination, country: KNOWN_DESTINATIONS[destination].country,
+    tier, vibe, durationDays, travelers, budgetTotal, nights,
+    flights, hotels, selectedFlightIdx: 0, selectedHotelIdx: 0, days,
+  };
+
+  renderResults();
+  document.getElementById("results").classList.add("visible");
+  document.getElementById("trip-header").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+document.getElementById("change-trip-btn").addEventListener("click", () => {
+  document.getElementById("results").classList.remove("visible");
+  clearGuardrail();
+  document.getElementById("destination").focus();
+});
+
+function renderResults() {
+  renderHeader();
+  renderFlightOptions();
+  renderHotelOptions();
+  renderCostStrip();
+  renderTabs();
+}
+
+function renderHeader() {
+  document.getElementById("dest-title").textContent = `${titleCase(state.destination)}, ${state.country}`;
+  document.getElementById("dest-sub").textContent =
+    `${state.durationDays} days · ${state.travelers} traveler${state.travelers > 1 ? "s" : ""} · ${state.vibe} vibe`;
+  document.getElementById("tier-badge").textContent = state.tier;
+}
+
+function renderFlightOptions() {
+  const wrap = document.getElementById("flight-options");
+  wrap.innerHTML = state.flights.map((f, i) => `
+    <label class="option-card">
+      <input type="radio" name="flight-choice" value="${i}" ${i === state.selectedFlightIdx ? "checked" : ""}>
+      <span class="option-card__body">
+        <span>
+          <span class="option-card__name">${f.carrier}</span>
+          <span class="option-card__meta">${f.flightClass} · ${f.stops === 0 ? "Nonstop" : f.stops + " stop"}</span>
+        </span>
+        <span class="option-card__price">${money(f.total)} total</span>
+      </span>
+    </label>
+  `).join("");
+  wrap.querySelectorAll('input[name="flight-choice"]').forEach(input => {
+    input.addEventListener("change", (e) => {
+      state.selectedFlightIdx = parseInt(e.target.value, 10);
+      renderFlightOptions();
+      renderCostStrip();
+    });
+  });
+}
+
+function renderHotelOptions() {
+  const wrap = document.getElementById("hotel-options");
+  wrap.innerHTML = state.hotels.map((h, i) => `
+    <label class="option-card">
+      <input type="radio" name="hotel-choice" value="${i}" ${i === state.selectedHotelIdx ? "checked" : ""}>
+      <span class="option-card__body">
+        <span>
+          <span class="option-card__name">${h.name}</span>
+          <span class="option-card__meta">${money(h.nightly)}/night · ${h.rating}★ · ${state.nights} night${state.nights > 1 ? "s" : ""}</span>
+        </span>
+        <span class="option-card__price">${money(h.total)} total</span>
+      </span>
+    </label>
+  `).join("");
+  wrap.querySelectorAll('input[name="hotel-choice"]').forEach(input => {
+    input.addEventListener("change", (e) => {
+      state.selectedHotelIdx = parseInt(e.target.value, 10);
+      renderHotelOptions();
+      renderCostStrip();
+    });
+  });
+}
+
+function renderCostStrip() {
+  const flight = state.flights[state.selectedFlightIdx];
+  const hotel = state.hotels[state.selectedHotelIdx];
+  const activitiesCost = state.days.reduce((sum, d) => sum + d.activities.reduce((s, a) => s + a.price, 0), 0);
+  const total = flight.total + hotel.total + activitiesCost;
+
+  document.getElementById("cost-flight").textContent = money(flight.total);
+  document.getElementById("cost-hotel").textContent = money(hotel.total);
+  document.getElementById("cost-activities").textContent = money(activitiesCost);
+  document.getElementById("cost-total").textContent = `${money(total)} of ${money(state.budgetTotal)} budget`;
+
+  const warningRegion = document.getElementById("warning-region");
+  const fixedCost = flight.total + hotel.total;
+  let warningMsg = null;
+  if (fixedCost > state.budgetTotal) {
+    warningMsg = `Flights + this stay alone come to about ${money(fixedCost)}, which already exceeds your ${money(state.budgetTotal)} budget. Consider a cheaper flight/hotel option above, a shorter trip, or a bigger budget.`;
+  } else if (total > state.budgetTotal * 1.5) {
+    warningMsg = `The estimated total (${money(total)}) is well above your stated budget (${money(state.budgetTotal)}). Try a cheaper flight or hotel option above.`;
+  }
+  warningRegion.innerHTML = warningMsg
+    ? `<p class="warning" role="alert"><strong>Budget notice —</strong> ${warningMsg}</p>`
+    : "";
+}
+
+/* -------- Day tabs: WAI-ARIA APG Tabs Pattern -------- */
+function renderTabs() {
+  const tablist = document.getElementById("day-tablist");
+  const panelsWrap = document.getElementById("day-panels");
+  tablist.innerHTML = "";
+  panelsWrap.innerHTML = "";
+
+  state.days.forEach((day, i) => {
+    const tabId = `tab-day-${day.day}`;
+    const panelId = `panel-day-${day.day}`;
+
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.setAttribute("role", "tab");
+    tab.id = tabId;
+    tab.setAttribute("aria-controls", panelId);
+    tab.setAttribute("aria-selected", i === 0 ? "true" : "false");
+    tab.tabIndex = i === 0 ? 0 : -1;
+    tab.innerHTML = `<span class="tab__day">Day</span><span class="tab__count">${day.day}</span>`;
+    tab.addEventListener("click", () => activateTab(i));
+    tab.addEventListener("keydown", (e) => handleTabKeydown(e, i));
+    tablist.appendChild(tab);
+
+    const panel = document.createElement("section");
+    panel.setAttribute("role", "tabpanel");
+    panel.id = panelId;
+    panel.setAttribute("aria-labelledby", tabId);
+    panel.tabIndex = 0;
+    panel.hidden = i !== 0;
+
+    let inner = "";
+    if (day.note) inner += `<p class="panel__note">${day.note}</p>`;
+    inner += `<h3 class="panel__heading">Day ${day.day} activities</h3><ul class="activity-list">`;
+    day.activities.forEach(a => {
+      inner += `<li class="activity-card"><span class="activity-card__name">${a.name}</span><span class="activity-card__price">${money(a.price)}</span></li>`;
+    });
+    inner += "</ul>";
+    panel.innerHTML = inner;
+    panelsWrap.appendChild(panel);
+  });
+
+  window._tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
+  window._panels = Array.from(panelsWrap.querySelectorAll('[role="tabpanel"]'));
+}
+
+function activateTab(index) {
+  window._tabs.forEach((t, i) => {
+    const selected = i === index;
+    t.setAttribute("aria-selected", String(selected));
+    t.tabIndex = selected ? 0 : -1;
+    window._panels[i].hidden = !selected;
+  });
+  window._tabs[index].focus();
+}
+
+function handleTabKeydown(e, index) {
+  const count = window._tabs.length;
+  let newIndex = null;
+  switch (e.key) {
+    case "ArrowRight": newIndex = (index + 1) % count; break;
+    case "ArrowLeft": newIndex = (index - 1 + count) % count; break;
+    case "Home": newIndex = 0; break;
+    case "End": newIndex = count - 1; break;
+    default: return;
+  }
+  e.preventDefault();
+  activateTab(newIndex);
+}
+
+/* =======================================================================
+   Mode switcher: Quick form vs Chat
+   ======================================================================= */
+document.querySelectorAll('input[name="mode"]').forEach(input => {
+  input.addEventListener("change", (e) => {
+    const isChat = e.target.value === "chat";
+    document.getElementById("form-panel").hidden = isChat;
+    document.getElementById("chat-panel").hidden = !isChat;
+    document.getElementById("results").classList.remove("visible");
+    clearGuardrail();
+    if (isChat && chatAgent.transcript.length === 0) {
+      chatAgent.pushAgentMessage(chatAgent.greeting());
+    }
+  });
+});
+
+/* =======================================================================
+   ChatAgent: the same incremental slot-filling loop as agent.py's
+   TripPlannerAgent (ingest() -> next_turn()), driven by free-text
+   messages instead of pre-filled form fields. It asks only for whatever
+   is still missing, checks the destination guardrail as soon as a
+   destination is known, and only calls the mock search tools once the
+   brief is complete.
+   ======================================================================= */
+
+const CLARIFYING_QUESTIONS = {
+  destination: "Where would you like to go?",
+  dates: "How many days is the trip, or what dates are you thinking?",
+  budget: "What's your total budget for the trip (in USD), roughly?",
+  vibe: "What's the vibe you're after: relaxing, adventurous, or cultural?",
+};
+
+class ChatAgent {
+  constructor() {
+    this.brief = { destination: null, durationDays: null, budgetTotalUsd: null, travelers: 1, vibe: null };
+    this.transcript = [];
+  }
+
+  reset() {
+    this.brief = { destination: null, durationDays: null, budgetTotalUsd: null, travelers: 1, vibe: null };
+    this.transcript = [];
+    document.getElementById("chat-log").innerHTML = "";
+    document.getElementById("results").classList.remove("visible");
+    this.pushAgentMessage(this.greeting());
+  }
+
+  greeting() {
+    return "Hi! Tell me about the trip you have in mind \u2014 where, how many days, your budget, and the vibe (relaxing, adventurous, or cultural). Give me as much or as little as you like; I'll ask for whatever's missing.";
+  }
+
+  missingFields() {
+    const m = [];
+    if (!this.brief.destination) m.push("destination");
+    if (!this.brief.durationDays) m.push("dates");
+    if (!this.brief.budgetTotalUsd) m.push("budget");
+    if (!this.brief.vibe) m.push("vibe");
+    return m;
+  }
+
+  /* ---- very small free-text parser -----------------------------------
+     Not full NLU -- just enough surface pattern-matching to demonstrate
+     the multi-turn slot-filling loop: dollar amounts -> budget, "N days"
+     -> duration, vibe keywords, traveler-count phrases, and known/
+     unserviceable destination names found anywhere in the message. */
+  parse(text) {
+    const found = {};
+    const lower = text.toLowerCase();
+
+    // destination: check longer names first so "cape town" wins over "town"
+    const allNames = [...Object.keys(KNOWN_DESTINATIONS), ...Object.keys(UNSERVICEABLE)]
+      .sort((a, b) => b.length - a.length);
+    for (const name of allNames) {
+      const re = new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+      if (re.test(text)) { found.destination = name; break; }
+    }
+
+    // budget: a dollar amount, or "budget" near a number
+    let m = lower.match(/\$\s?([\d,]+)/) || lower.match(/budget[^\d]{0,10}([\d,]+)/) || lower.match(/([\d,]+)[^\d]{0,10}budget/);
+    if (m) found.budgetTotalUsd = parseFloat(m[1].replace(/,/g, ""));
+
+    // duration: "N days" / "N-day", or week-based phrasing
+    m = lower.match(/(\d+)\s*-?\s*day/);
+    if (m) found.durationDays = parseInt(m[1], 10);
+    else if (/\ba week\b|\bone week\b/.test(lower)) found.durationDays = 7;
+    else if (/\ba weekend\b/.test(lower)) found.durationDays = 3;
+    else {
+      m = lower.match(/(\d+)\s*weeks?/);
+      if (m) found.durationDays = parseInt(m[1], 10) * 7;
+    }
+
+    // travelers
+    if (/\bsolo\b|\bjust me\b|\bby myself\b|\bon my own\b/.test(lower)) found.travelers = 1;
+    m = lower.match(/family of (\d+)/);
+    if (m) found.travelers = parseInt(m[1], 10);
+    else if (/\bcouple\b|\bmy partner and (?:i|me)\b|\bfor two\b|\btwo of us\b/.test(lower)) found.travelers = 2;
+    else {
+      m = lower.match(/(\d+)\s*(?:people|travelers|travellers|pax|of us|adults)/);
+      if (m) found.travelers = parseInt(m[1], 10);
+    }
+
+    // vibe
+    if (/relax/.test(lower)) found.vibe = "relaxing";
+    else if (/advent/.test(lower)) found.vibe = "adventurous";
+    else if (/cultur/.test(lower)) found.vibe = "cultural";
+
+    return found;
+  }
+
+  ingest(text) {
+    const found = this.parse(text);
+    if (found.destination !== undefined) this.brief.destination = found.destination;
+    if (found.durationDays !== undefined) this.brief.durationDays = found.durationDays;
+    if (found.budgetTotalUsd !== undefined) this.brief.budgetTotalUsd = found.budgetTotalUsd;
+    if (found.travelers !== undefined) this.brief.travelers = found.travelers;
+    if (found.vibe !== undefined) this.brief.vibe = found.vibe;
+    return found;
+  }
+
+  /* Mirrors agent.py's next_turn(): guardrail check first (as soon as a
+     destination is known), then ask for whatever's still missing, then
+     -- only once everything is filled in -- call the mock search tools
+     and build the itinerary. */
+  nextTurn() {
+    if (this.brief.destination) {
+      const guardrailMsg = checkGuardrail(this.brief.destination);
+      if (guardrailMsg) {
+        this.brief.destination = null; // let them try a different one
+        return { kind: "guardrail", message: guardrailMsg };
+      }
+    }
+
+    const missing = this.missingFields();
+    if (missing.length) {
+      const questions = missing.map(f => CLARIFYING_QUESTIONS[f]).join(" ");
+      return { kind: "clarify", message: questions, missing };
+    }
+
+    return { kind: "itinerary", message: "Here's what I found \u2014 you can compare flight and hotel options below." };
+  }
+
+  pushAgentMessage(text) {
+    this.transcript.push({ speaker: "agent", text });
+    this.renderTranscript();
+  }
+
+  pushUserMessage(text) {
+    this.transcript.push({ speaker: "user", text });
+    this.renderTranscript();
+  }
+
+  renderTranscript() {
+    const log = document.getElementById("chat-log");
+    log.innerHTML = this.transcript.map(m => `
+      <div class="chat-msg chat-msg--${m.speaker}">
+        <div class="chat-msg__bubble">
+          <span class="chat-msg__speaker visually-hidden" style="position:absolute;left:-9999px;">${m.speaker === "agent" ? "Agent:" : "You:"}</span>
+          ${m.text}
+        </div>
+      </div>
+    `).join("");
+    log.scrollTop = log.scrollHeight;
+  }
+
+  summarySoFar() {
+    const b = this.brief;
+    const parts = [];
+    if (b.destination) parts.push(titleCase(b.destination));
+    if (b.durationDays) parts.push(`${b.durationDays} days`);
+    if (b.budgetTotalUsd) parts.push(money(b.budgetTotalUsd));
+    if (b.vibe) parts.push(b.vibe);
+    return parts.length ? `So far: ${parts.join(" \u00b7 ")}.` : "";
+  }
+}
+
+const chatAgent = new ChatAgent();
+
+document.getElementById("chat-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const input = document.getElementById("chat-input");
+  const text = input.value.trim();
+  if (!text) return;
+
+  chatAgent.pushUserMessage(text);
+  const found = chatAgent.ingest(text);
+  input.value = "";
+
+  const turn = chatAgent.nextTurn();
+
+  if (turn.kind === "guardrail") {
+    chatAgent.pushAgentMessage(turn.message);
+    return;
+  }
+
+  if (turn.kind === "clarify") {
+    const summary = chatAgent.summarySoFar();
+    const ack = Object.keys(found).length
+      ? (summary ? `Got it. ${summary} ` : "")
+      : "I didn't catch anything new there \u2014 ";
+    chatAgent.pushAgentMessage(ack + turn.message);
+    document.getElementById("results").classList.remove("visible");
+    return;
+  }
+
+  // kind === "itinerary": build it exactly like the form path does
+  chatAgent.pushAgentMessage(turn.message);
+  const b = chatAgent.brief;
+  const destination = b.destination;
+  const tier = classifyBudgetTier(b.budgetTotalUsd, b.durationDays, b.travelers);
+  const nights = b.durationDays > 1 ? b.durationDays - 1 : 1;
+
+  state = {
+    destination, country: KNOWN_DESTINATIONS[destination].country,
+    tier, vibe: b.vibe, durationDays: b.durationDays, travelers: b.travelers,
+    budgetTotal: b.budgetTotalUsd, nights,
+    flights: searchFlights(destination, tier, b.travelers),
+    hotels: searchHotels(destination, tier, nights),
+    selectedFlightIdx: 0, selectedHotelIdx: 0,
+    days: buildDays(destination, b.vibe, tier, b.durationDays),
+  };
+  clearGuardrail();
+  renderResults();
+  document.getElementById("results").classList.add("visible");
+  document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+document.getElementById("chat-restart-btn").addEventListener("click", () => {
+  chatAgent.reset();
+});
+
+populateDestinationList();
+</script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+{
+  "destination": "Kyoto",
+  "country": "Japan",
+  "duration_days": 8,
+  "travelers": 2,
+  "vibe": "cultural",
+  "budget_tier": "luxury",
+  "budget_total_usd": 6000.0,
+  "flight": {
+    "carrier": "SkyBridge",
+    "price_per_person_usd": 1007,
+    "total_price_usd": 2014,
+    "class": "Business",
+    "stops": 0
+  },
+  "hotel": {
+    "name": "Kyoto Grand Resort & Spa",
+    "tier": "luxury",
+    "nightly_rate_usd": 324,
+    "total_stay_usd": 2268,
+    "rating": 4.7
+  },
+  "days": [
+    {
+      "day": 1,
+      "activities": [
+        {
+          "name": "Guided historic-site tour",
+          "price_usd": 106,
+          "tag_source": "kyoto"
+        },
+        {
+          "name": "Sunrise temple visit",
+          "price_usd": 77,
+          "tag_source": "kyoto"
+        }
+      ],
+      "note": "Arrival day -- lighter schedule to allow for travel/check-in."
+    },
+    {
+      "day": 2,
+      "activities": [
+        {
+          "name": "Traditional dance show",
+          "price_usd": 195,
+          "tag_source": "kyoto"
+        },
+        {
+          "name": "Ancient ruins visit",
+          "price_usd": 69,
+          "tag_source": "kyoto"
+        },
+        {
+          "name": "Museum of national history",
+          "price_usd": 155,
+          "tag_source": "kyoto"
+        }
+      ],
+      "note": null
+    },
+    {
+      "day": 3,
+      "activities": [
+        {
+          "name": "Local artisan workshop",
+          "price_usd": 189,
+          "tag_source": "kyoto"
+        },
+        {
+          "name": "Old town walking tour",
+          "price_usd": 118,
+          "tag_source": "kyoto"
+        },
+        {
+          "name": "Temple complex walking tour",
+          "price_usd": 54,
+          "tag_source": "kyoto"
+        }
+      ],
+      "note": null
+    },
+    {
+      "day": 4,
+      "activities": [
+        {
+          "name": "Guided historic-site tour",
+          "price_usd": 106,
+          "tag_source": "kyoto"
+        },
+        {
+          "name": "Sunrise temple visit",
+          "price_usd": 77,
+          "tag_source": "kyoto"
+        },
+        {
+          "name": "Traditional dance show",
+          "price_usd": 195,
+          "tag_source": "kyoto"
+        }
+      ],
+      "note": null
+    },
+    {
+      "day": 5,
+      "activities": [
+        {
+          "name": "Ancient ruins visit",
+          "price_usd": 69,
+          "tag_source": "kyoto"
+        },
+        {
+          "name": "Museum of national history",
+          "price_usd": 155,
+          "tag_source": "kyoto"
+        },
+        {
+          "name": "Local artisan workshop",
+          "price_usd": 189,
+          "tag_source": "kyoto"
+        }
+      ],
+      "note": null
+    },
+    {
+      "day": 6,
+      "activities": [
+        {
+          "name": "Old town walking tour",
+          "price_usd": 118,
+          "tag_source": "kyoto"
+        },
+        {
+          "name": "Temple complex walking tour",
+          "price_usd": 54,
+          "tag_source": "kyoto"
+        },
+        {
+          "name": "Guided historic-site tour",
+          "price_usd": 106,
+          "tag_source": "kyoto"
+        }
+      ],
+      "note": null
+    },
+    {
+      "day": 7,
+      "activities": [
+        {
+          "name": "Sunrise temple visit",
+          "price_usd": 77,
+          "tag_source": "kyoto"
+        },
+        {
+          "name": "Traditional dance show",
+          "price_usd": 195,
+          "tag_source": "kyoto"
+        },
+        {
+          "name": "Ancient ruins visit",
+          "price_usd": 69,
+          "tag_source": "kyoto"
+        }
+      ],
+      "note": null
+    },
+    {
+      "day": 8,
+      "activities": [
+        {
+          "name": "Museum of national history",
+          "price_usd": 155,
+          "tag_source": "kyoto"
+        },
+        {
+          "name": "Local artisan workshop",
+          "price_usd": 189,
+          "tag_source": "kyoto"
+        }
+      ],
+      "note": "Departure day -- lighter schedule to allow time for checkout/travel."
+    }
+  ],
+  "estimated_total_cost_usd": 6999,
+  "within_budget": false,
+  "budget_warning": null
+}
