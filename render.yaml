@@ -9,4 +9,8 @@ services:
       - key: GEMINI_API_KEY
         sync: false   # set this manually in the Render dashboard, never commit it
       - key: GEMINI_MODEL
-        value: gemini-2.0-flash
+        sync: false   # set manually too -- Gemini model names change over time;
+                       # this way a dashboard fix (e.g. after a model retirement)
+                       # survives the next git push instead of being reverted to
+                       # whatever's hardcoded here. Defaults to gemini-3.8-flash
+                       # in app.py if left unset.

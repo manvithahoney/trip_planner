@@ -20,6 +20,7 @@ See README_DEPLOY.md for deploying this on Render.
 import json
 import os
 import re
+import time
 import uuid
 
 from fastapi import FastAPI, HTTPException
@@ -34,8 +35,36 @@ from google.genai import types
 from tools import ALL_TOOLS
 from validators import validate_itinerary
 
-MODEL_NAME = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+MODEL_NAME = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
 MAX_CORRECTION_ATTEMPTS = 2
+
+# Transient errors worth retrying automatically before giving up and
+# surfacing something to the person: the model being temporarily
+# overloaded (503) or the account being rate-limited (429). Both are
+# usually gone within a few seconds.
+_TRANSIENT_MARKERS = ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "overloaded"]
+_RETRY_DELAYS_SEC = [2, 5, 10]
+
+
+def _is_transient_error(exc: Exception) -> bool:
+    msg = str(exc)
+    return any(marker in msg for marker in _TRANSIENT_MARKERS)
+
+
+def send_with_retry(chat_session, message: str):
+    """Sends a message to the Gemini chat session, retrying with backoff
+    on transient errors (model overloaded / rate limited) before raising."""
+    last_exc = None
+    for attempt, delay in enumerate([0] + _RETRY_DELAYS_SEC):
+        if delay:
+            time.sleep(delay)
+        try:
+            return chat_session.send_message(message)
+        except Exception as e:  # noqa: BLE001
+            last_exc = e
+            if not _is_transient_error(e):
+                raise
+    raise last_exc
 
 SYSTEM_INSTRUCTION = """You are the Trip Planner Agent, a friendly multi-turn travel planning assistant.
 
@@ -181,7 +210,7 @@ def chat(req: ChatRequest):
     chat_session = get_or_create_chat(session_id)
 
     try:
-        response = chat_session.send_message(req.message)
+        response = send_with_retry(chat_session, req.message)
         reply_text = response.text or ""
     except Exception as e:  # noqa: BLE001 -- surface any Gemini/API error to the client
         raise HTTPException(status_code=502, detail=f"Gemini API error: {e}")
@@ -196,7 +225,7 @@ def chat(req: ChatRequest):
         attempts += 1
         correction_prompt = "VALIDATION_FAILED: " + " | ".join(problems)
         try:
-            response = chat_session.send_message(correction_prompt)
+            response = send_with_retry(chat_session, correction_prompt)
             reply_text = response.text or ""
         except Exception as e:  # noqa: BLE001
             raise HTTPException(status_code=502, detail=f"Gemini API error during correction: {e}")
